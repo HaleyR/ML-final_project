@@ -19,23 +19,33 @@ from tester import dump_classifier_and_data
 ### 'to_messages', 'email_address', 'from_poi_to_this_person', 'from_messages', 
 ### 'from_this_person_to_poi', 'shared_receipt_with_poi'
 
-features_list = ['poi','total_stock_value','salary_over_stock_options'] # You will need to use more features
+features_list = ['poi','total_stock_value',
+                 'salary']
+ # You will need to use more features
 clean_feature_list=['salary', 'exercised_stock_options', 'total_stock_value']
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "rb") as data_file:
     data_dict = pickle.load(data_file)
 
 ### Task 2: Remove outliers
-    
+data_cutoff=0.5 #percent of relavent features that are missing before removing the datapoint    
+delete_list=[]
     
 ### Task 3: Create new feature(s)
 for person, value in data_dict.items():
+    
+    missing_vals=0
     for i in clean_feature_list:
         if value[i]=="NaN":
             value[i]=0
-    value['salary_over_stock_options']=(value['salary'])/(value['exercised_stock_options']+0.01)
+            missing_vals+=1
+            print(i)
+  
+    value['salary_over_stock_options']=(value['salary'])/(
+            value['exercised_stock_options']+0.01)    
     
-    
+    if float(missing_vals)/len(features_list)>data_cutoff:
+        delete_list.append(person) #TODO need to figure out if deleting this is good or not
     
 ### Store to my_dataset for easy export below.
 my_dataset = data_dict
@@ -51,8 +61,11 @@ labels, features = targetFeatureSplit(data)
 ### http://scikit-learn.org/stable/modules/pipeline.html
 
 # Provided to give you a starting point. Try a variety of classifiers.
-from sklearn.naive_bayes import GaussianNB
-clf = GaussianNB()
+from sklearn.svm import SVC
+cValue=1000
+kernelType='rbf'
+
+clf = SVC(C=cValue, kernel=kernelType)
 
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
@@ -66,6 +79,17 @@ clf = GaussianNB()
 from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
     train_test_split(features, labels, test_size=0.3, random_state=42)
+
+num_train_poi=sum(labels_train)
+num_test_poi=sum(labels_test)
+num_train_Npoi=len(labels_train)-num_train_poi
+num_test_Npoi=len(labels_test)-num_test_poi
+
+print("\nIn the training set there are {} POI and {} Non POI".format(
+        num_train_poi, num_train_Npoi))
+
+print("In the testing set there are {} POI and {} Non POI\n".format(
+        num_test_poi, num_test_Npoi))
     
 clf.fit(features_train,labels_train)    
 pred=clf.predict(features_test)    
@@ -96,4 +120,9 @@ from tester import test_classifier
 test_classifier(clf, my_dataset, features_list, folds = 1000)
 
 from test_plotter import testPlotter
-testPlotter(features_list[1:3], features, labels)
+i=0
+viewFeature=[]
+while i<len(features):
+    viewFeature.append([features[i][0], features[i][1]])
+    i=i+1
+testPlotter(features_list[1:3], viewFeature, labels)
