@@ -96,4 +96,9 @@ from tester import test_classifier
 test_classifier(clf, my_dataset, features_list, folds = 1000)
 
 from test_plotter import testPlotter
-testPlotter(features_list[1:3], features, labels)
+i=0
+viewFeature=[]
+while i<len(features):
+    viewFeature.append([features[i][0], features[i][1]])
+    i=i+1
+testPlotter(features_list[1:3], viewFeature, labels)
